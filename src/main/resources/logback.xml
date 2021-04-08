@@ -1,0 +1,113 @@
+<configuration>
+    <!-- 读取classs路径下的配置文件，然后从配置文件读取需要的配置 -->
+    <property resource="application.properties" />
+    <property name="LOG_HOME" value="${logging.ecs.path:-/data/logs/ate-svc-dataapi}" />
+    <property name="APP_NAME" value="${logging.ecs.appname:-ate-svc-dataapi}"/>
+    <property name="logger_max_history" value="${logging.ecs.maxHistory:-200}" />
+    <property name="max_file_size" value="${logging.ecs.maxFileSize:-50MB}"/>
+    <property name="logger_level" value="${logging.level:-DEBUG}"/>
+
+    <!-- 控制台输出日志 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+<!--        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">-->
+<!--            <evaluator>-->
+<!--                <expression>logger.contains("TextProviderHelper")</expression>-->
+<!--            </evaluator>-->
+<!--            <OnMismatch>NEUTRAL</OnMismatch>-->
+<!--            <OnMatch>DENY</OnMatch>-->
+<!--        </filter>-->
+        <encoder charset="UTF-8">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36}: %line - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 按照每天生成日志文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+<!--        <Encoding>UTF-8</Encoding>-->
+        <!-- 可选，可以用来固定最新的日志文件名称-->
+        <file>${LOG_HOME}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/${APP_NAME}_%d{yyyy-MM-dd}.%i.log </FileNamePattern>
+            <!-- 此处的历史记录和FileNamePattern中的%d格式有关，如果配置到天，则表示天数，如果配置到月则表示月-->
+            <!-- http://logback.qos.ch/manual/appenders.html -->
+            <MaxHistory>${logger_max_history}</MaxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${max_file_size}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}: %line - %msg%n </pattern>
+        </layout>
+    </appender>
+
+    <!-- 错误日志 -->
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+<!--        <Encoding>UTF-8</Encoding>-->
+        <file>${LOG_HOME}/${APP_NAME}_error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/${APP_NAME}_error.%d{yyyy-MM-dd}.%i.log </FileNamePattern>
+            <MaxHistory>${logger_max_history}</MaxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${max_file_size}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}: %line - %msg%n </pattern>
+        </layout>
+        <!-- 只接受错误日志输出 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 只打印ERROR日志 -->
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 访问日志 -->
+    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/access_history/${APP_NAME}_access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/access_history/${APP_NAME}_access-%d{yyyy-MM-dd-HH}.%i.log </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>365</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="com.iflytek.srd.common.log.AccessLogger" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS" />
+    </logger>
+
+    <!-- 用来设置某一个包或者具体的某一个类的日志打印级别，包名要与实际项目一致 -->
+    <logger name="com.bcc" level="ERROR" />
+    <logger name="com.ibatis" level="ERROR" />
+    <logger name="com.ibatis.common.jdbc.SimpleDataSource" level="ERROR" />
+    <logger name="com.ibatis.common.jdbc.ScriptRunner" level="ERROR" />
+    <logger name="com.ibatis.sqlmap.engine.impl.SqlMapClientDelegate" level="ERROR" />
+    <logger name="java.sql.Connection" level="ERROR" />
+    <logger name="java.sql.Statement" level="ERROR" />
+    <logger name="java.sql.PreparedStatement" level="ERROR" />
+    <!-- 打印数据库sql，mybatis只需要把对应mapper包路径级别开成debug级别 -->
+    <logger name="com.h3c.seeranalyzer.user.web.mapper" level="debug" />
+    <!-- additivity属性：子Logger 是否继承 root的Logger 的输出源（appender） 的标志位。默认情况下子Logger会继承root的Logger的appender，
+   也就是说子Logger会在root的Logger的appender里输出。若是additivity设为false，则子Logger只会在自己的appender里输出，
+   不会在root的logger的appender里输出。
+   name是指logger在代码中创建的名称，一般是用类的全路径，也可以指定名称。
+   -->
+<!--    <logger name="com.iflytek.srd.conv.util.LogUtil" level="INFO" additivity="false">-->
+<!--        <appender-ref ref="MEDIACONV" />-->
+<!--        <appender-ref ref="FILE" />-->
+<!--    </logger>-->
+
+    <logger name="org.apache.http" level="info" />
+
+    <!-- root将级别为“INFO”及大于“INFO”的日志信息交给已经配置好的名为“Console”的appender处理，“Console”appender将信息打印到Console-->
+    <root level="${logger_level}">
+        <appender-ref ref="FILE" />
+        <appender-ref ref="ERROR" />
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>

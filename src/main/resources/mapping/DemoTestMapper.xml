@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.atesu.atesvcdataapi.dao.DemoTestMapper">
+  <resultMap id="BaseResultMap" type="net.atesu.atesvcdataapi.model.DO.DemoTest">
+    <result column="name" jdbcType="INTEGER" property="name" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+  </resultMap>
+  <insert id="insert" parameterType="net.atesu.atesvcdataapi.model.DO.DemoTest">
+    insert into demo_test (name, description)
+    values (#{name,jdbcType=INTEGER}, #{description,jdbcType=VARCHAR})
+  </insert>
+  <select id="selectPage" resultMap="BaseResultMap">
+    select name, description
+    from demo_test
+  </select>
+</mapper>
